@@ -1,17 +1,26 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
+    branches:
+      - codex/preserve-aea35af
+      - redesign
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+      - edited
+      - converted_to_draft
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: batch-${{ github.workflow }}-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && github.run_id || 'candidate' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   fmt:
+    if: ${{ (github.event_name != 'pull_request' || (!github.event.pull_request.draft && (github.event.action != 'edited' || github.event.changes.base != null))) }}
     name: Format
     runs-on: ubuntu-latest
     steps:
@@ -20,6 +29,7 @@ jobs:
         run: make fmt-check
 
   clippy:
+    if: ${{ (github.event_name != 'pull_request' || (!github.event.pull_request.draft && (github.event.action != 'edited' || github.event.changes.base != null))) }}
     name: Clippy
     runs-on: ubuntu-latest
     steps:
@@ -29,6 +39,7 @@ jobs:
         run: make clippy-check
 
   wasm-clippy:
+    if: ${{ (github.event_name != 'pull_request' || (!github.event.pull_request.draft && (github.event.action != 'edited' || github.event.changes.base != null))) }}
     name: WASM Clippy
     runs-on: ubuntu-latest
     steps:
@@ -40,6 +51,7 @@ jobs:
         run: make wasm-clippy-check
 
   test:
+    if: ${{ (github.event_name != 'pull_request' || (!github.event.pull_request.draft && (github.event.action != 'edited' || github.event.changes.base != null))) }}
     name: Test
     runs-on: ubuntu-latest
     steps:
@@ -50,6 +62,7 @@ jobs:
       - uses: ./.github/actions/check-git-status
 
   wasm-test:
+    if: ${{ (github.event_name != 'pull_request' || (!github.event.pull_request.draft && (github.event.action != 'edited' || github.event.changes.base != null))) }}
     name: WASM Test
     runs-on: ubuntu-latest
     steps:
@@ -61,6 +74,7 @@ jobs:
         run: make wasm-test
 
   itest:
+    if: ${{ (github.event_name != 'pull_request' || (!github.event.pull_request.draft && (github.event.action != 'edited' || github.event.changes.base != null))) }}
     name: Integration test
     runs-on: ubuntu-latest
     steps:
